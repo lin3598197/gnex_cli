@@ -68,19 +68,39 @@ class GnomeExtensionApp(App):
         self.current_uuid = None
 
     def compose(self) -> ComposeResult:
-        yield Header(show_clock = True)
-        with Vertical(id = "left pane"):
-            yield ExtensionDetails("Choose a extension from left pane", id = "ext-details")
-            with Horizontal(id = "action-buttons"):
-                yield Button("Enable", id = "btn-enable", variant = "success")
-                yield Button("Disable", id = "btn-disable", variant = "error")
+        yield Header(show_clock=True)
+        with Horizontal():
+            yield OptionList(id="left-pane")
+            with Vertical(id="right-pane"):
+                yield ExtensionDetails("Choose an extension from left pane", id="ext-details")
+                with Horizontal(id="action-buttons"):
+                    yield Button("Enable", id="btn-enable", variant="success")
+                    yield Button("Disable", id="btn-disable", variant="error")
+                    
         yield Footer()
     def on_mount(self):
-        ext_list = self.query_one("#left_pane", OptionList)
+        ext_list = self.query_one("#left-pane", OptionList)
         uuids = get_installed_extensions()
         for uuid in uuids:
             ext_list.add_option(Option(uuid, id = uuid))
     
-    def on_option_list_option_selected(self, event:OptionList.OptionSelected):
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
         self.current_uuid = event.option.id
-        info = get_extensions_info()
+        info = get_extensions_info(self, current_uuid)
+        self.query_one("#ext-details", ExtensionDetails).update_info(info)
+    
+    def on_button_pressed(self, event: Button.Pressed):
+        if not self.current_uuid:
+            return
+        button_id = event.button.id
+        if button_id == "btn-enable":
+            subprocess.run(['gnome-extensions', 'enable', self.current_uuid])
+        elif button_id == "btn-disable":
+            subprocess.run(['gnome-extensions', 'disable', self.current_uuid])
+
+        info = get_extensions_info(self.current_uuid)
+        self.query_one("#ext-details", ExtensionDetails).update_info(info)
+
+if __name__ == "__main__":
+    app = GnomeExtensionApp()
+    app.run()
