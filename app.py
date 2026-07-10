@@ -86,20 +86,29 @@ class GnomeExtensionApp(App):
     
     def on_option_list_option_selected(self, event: OptionList.OptionSelected):
         self.current_uuid = event.option.id
-        info = get_extensions_info(self, current_uuid)
+        info = get_extensions_info(self.current_uuid)
         self.query_one("#ext-details", ExtensionDetails).update_info(info)
     
     def on_button_pressed(self, event: Button.Pressed):
         if not self.current_uuid:
+            self.notify("Choose a extensions from left pane", severity = "warning")
             return
         button_id = event.button.id
-        if button_id == "btn-enable":
-            subprocess.run(['gnome-extensions', 'enable', self.current_uuid])
-        elif button_id == "btn-disable":
-            subprocess.run(['gnome-extensions', 'disable', self.current_uuid])
-
+        try:
+            if button_id == "btn-enable":
+                subprocess.run(['gnome-extensions','enable', self.current_uuid], check = True)
+                self.notify(f"successful enabled {self.current_uuid}", title = "Enabled")
+            elif button_id == "btn-disable":
+                subprocess.run(['gnome-extensions','disable', self.current_uuid], check = True)
+                self.notify(f"successful disabled {self.current_uuid}", title = "Disabled", severity = "error")
+        except Exception as e:
+            self.notify(f"Operation failed:{e}", severity = "warning", title = "error")
+        
         info = get_extensions_info(self.current_uuid)
         self.query_one("#ext-details", ExtensionDetails).update_info(info)
+
+
+
 
 if __name__ == "__main__":
     app = GnomeExtensionApp()
