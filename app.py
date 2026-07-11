@@ -1,7 +1,7 @@
 import subprocess
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Header, Footer, OptionList, Button, Static
+from textual.widgets import Header, Footer, OptionList, Button, Static, Input
 from textual.widgets.option_list import Option
 
 def get_installed_extensions():
@@ -42,6 +42,7 @@ class ExtensionDetails(Static):
         self.update(content)
 
 #-------Main Code---------------
+class gnex_cli(App):
     CSS = """
     #left-pane {
         width: 40%;
@@ -58,19 +59,23 @@ class ExtensionDetails(Static):
     Button {
         margin-right: 2;
     }
+    #search-box{
+        dock:bottom;
+    }
     """
-
-class GnomeExtensionApp(App):
     BINDINGS = [("q", "quit")]
 
     def __init__(self):
         super().__init__()
         self.current_uuid = None
+        self.all_uuids = []
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
-            yield OptionList(id="left-pane")
+            with Vertical(id="left-pane"):
+                yield OptionList(id = "ext-list")
+                yield Input(placeholder = "input something to search", id = "search-box")
             with Vertical(id="right-pane"):
                 yield ExtensionDetails("Choose an extension from left pane", id="ext-details")
                 with Horizontal(id="action-buttons"):
@@ -78,11 +83,24 @@ class GnomeExtensionApp(App):
                     yield Button("Disable", id="btn-disable", variant="error")
                     
         yield Footer()
-    def on_mount(self):
-        ext_list = self.query_one("#left-pane", OptionList)
-        uuids = get_installed_extensions()
-        for uuid in uuids:
+    def update_list(self, uuids_to_show):
+        ext_list = self.query_one("#ext-list", OptionList)
+
+        ext_list.clear_options()
+        for uuid in uuids_to_show:
             ext_list.add_option(Option(uuid, id = uuid))
+    
+    def on_mount(self):
+        self.all_uuids = get_installed_extensions()
+        self.update_list(self.all_uuids)
+
+    def on_input_changed(self, event: Input.Changed):
+        search_text = event.value.lower()
+        if not search_text:
+            self.update_list(self.all_uuids)
+        else:
+            filtered_uuids = [uuid for uuid in self.all_uuids if search_text in uuid.lower()]
+            self.update_list(filtered_uuids)
     
     def on_option_list_option_selected(self, event: OptionList.OptionSelected):
         self.current_uuid = event.option.id
@@ -111,5 +129,5 @@ class GnomeExtensionApp(App):
 
 
 if __name__ == "__main__":
-    app = GnomeExtensionApp()
-    app.run()
+    app = gnex_cli()
+    app.run()   
