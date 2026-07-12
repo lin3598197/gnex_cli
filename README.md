@@ -14,30 +14,21 @@ Gnex_cli is a Terminal User Interface (TUI) application designed to manage your 
 - GNOME Desktop Environment (`gnome-extensions` CLI tool must be installed and accessible).
 
 ## Installation
-
-1. Clone the repository or navigate to the project directory:
-   ```bash
-   cd gnex_cli
-   ```
-
-2. (Optional but recommended) Create and activate a virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. Install the required dependencies:
-   ```bash
-   pip install textual
-   ```
-
-## Usage
-
-Run the application using Python:
-
 ```bash
-python3 app.py
+git clone https://github.com/lin3598197/gnex_cli.git && cd gnex_cli
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
+#### After you install,next time you only have to do is:
+```bash
+cd gnex_cli #path to your folder in local
+source .venv/bin/activate #if you didn't activate virtual enviroment
+python app.py #run app
+```
+
+
 
 ### Controls
 
