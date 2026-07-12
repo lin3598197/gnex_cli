@@ -1,8 +1,12 @@
 import subprocess
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Header, Footer, OptionList, Button, Static, Input
+from textual.widgets import Header, Footer, OptionList, Button, Static, Input, TabbedContent, TabPane
 from textual.widgets.option_list import Option
+import json
+import urllib.request
+import urllib.parse
+
 
 def get_installed_extensions():
     try:
@@ -22,6 +26,18 @@ def get_extensions_info(uuid):
         return info
     except Exception:
         return {"Name": uuid, "State": "UNKNOWN", "Description": "ERR While fetch info ><"}
+
+def search_extensions_online(query):
+    safe_query = urllib.parse.quote(query)
+    url = f"https://extensions.gnome.org/extension-query/?search={safe_query}"
+
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            return data.get("extensions", [])
+    except Exception as e:
+        return []
 
 #-------UI Elements---------
 
@@ -72,16 +88,20 @@ class gnex_cli(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        with Horizontal():
-            with Vertical(id="left-pane"):
-                yield OptionList(id = "ext-list")
-                yield Input(placeholder = "input something to search", id = "search-box")
-            with Vertical(id="right-pane"):
-                yield ExtensionDetails("Choose an extension from left pane", id="ext-details")
-                with Horizontal(id="action-buttons"):
-                    yield Button("Enable", id="btn-enable", variant="success")
-                    yield Button("Disable", id="btn-disable", variant="error")
-                    
+        with TabbedContent(initial="tab-local"):
+            with TabPane("Local Extensions", id = "tab-local"):
+                with Horizontal():
+                    with Vertical(id="left-pane"):
+                        yield OptionList(id = "ext-list")
+                        yield Input(placeholder = "input something to search", id = "search-box")
+                    with Vertical(id="right-pane"):
+                        yield ExtensionDetails("Choose an extension from left pane", id="ext-details")
+                        with Horizontal(id="action-buttons"):
+                            yield Button("Enable", id="btn-enable", variant="success")
+                            yield Button("Disable", id="btn-disable", variant="error")
+            with TabPane("Online Search", id = "tab-online"):
+                yield Input(placeholder = "Search Extensions from web: Input Keyword and press Enter", id = "online-search-box")
+                yield OptionList(id = "online-ext-list")
         yield Footer()
     def update_list(self, uuids_to_show):
         ext_list = self.query_one("#ext-list", OptionList)
@@ -95,6 +115,8 @@ class gnex_cli(App):
         self.update_list(self.all_uuids)
 
     def on_input_changed(self, event: Input.Changed):
+        if event.input.id != "search-box":
+            return
         search_text = event.value.lower()
         if not search_text:
             self.update_list(self.all_uuids)
@@ -125,8 +147,23 @@ class gnex_cli(App):
         info = get_extensions_info(self.current_uuid)
         self.query_one("#ext-details", ExtensionDetails).update_info(info)
 
-
-
+    def on_input_submitted(self, event: Input.Submitted):
+        if event.input.id == "online-search-box":
+            search_text =  event.value.strip()
+            if not search_text:
+                return
+            self.notify(f"searching online...{search_text}")
+            results = search_extensions_online(search_text)
+            online_list = self.query_one("#online-ext-list", OptionList)
+            online_list.clear_options()
+            if not results:
+                self.notify("Can't find any extensions QwQ", severity = "warning")
+                return
+            for ext in results:
+                display_text = f"{ext.get('name')} (Author: {ext.get('creator')})"
+                uuid = ext.get('uuid')
+                online_list.add_option(Option(display_text, id = uuid))
+            self.notify(f"Found {len(results)} Extensions!!", title = "search complete")
 
 if __name__ == "__main__":
     app = gnex_cli()
