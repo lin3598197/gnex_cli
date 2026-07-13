@@ -85,6 +85,7 @@ class gnex_cli(App):
         super().__init__()
         self.current_uuid = None
         self.all_uuids = []
+        self.online_results_data = {}
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -100,8 +101,13 @@ class gnex_cli(App):
                             yield Button("Enable", id="btn-enable", variant="success")
                             yield Button("Disable", id="btn-disable", variant="error")
             with TabPane("Online Search", id = "tab-online"):
-                yield Input(placeholder = "Search Extensions from web: Input Keyword and press Enter", id = "online-search-box")
-                yield OptionList(id = "online-ext-list")
+                with Horizontal():
+                    with Vertical(id = "left-pane"):
+                        yield Input(placeholder = "Search Extensions from web: Input Keyword and press Enter", id = "online-search-box")
+                        yield OptionList(id = "online-ext-list")
+                    with Vertical(id = "right-pane"):
+                        yield ExtensionDetails("Select a Extension to see Details", id = "online-ext-details")
+                        yield Button("Install", id = "btn-install", variant = "primary")
         yield Footer()
     def update_list(self, uuids_to_show):
         ext_list = self.query_one("#ext-list", OptionList)
@@ -125,10 +131,21 @@ class gnex_cli(App):
             self.update_list(filtered_uuids)
     
     def on_option_list_option_selected(self, event: OptionList.OptionSelected):
-        self.current_uuid = event.option.id
-        info = get_extensions_info(self.current_uuid)
-        self.query_one("#ext-details", ExtensionDetails).update_info(info)
-    
+        if event.option_list.id == "ext-list":
+            self.current_uuid = event.option.id
+            info = get_extensions_info(self.current_uuid)
+            self.query_one("#ext-details", ExtensionDetails).update_info(info)
+        elif event.option_list.id == "online-ext-list":
+            self.current_uuid = event.option.id
+            ext_data = self.online_results_data.get(self.current_uuid, {})
+            info = {
+                "name": ext_data.get("Name", "Unknown"),
+                "Stats": "Not installed",
+                "Description": ext_data.get("Description", "No Description"),
+                "Version": str(ext_data.get("Version", "N/A"))
+            }
+            self.query_one("#online-ext-details", ExtensionDetails).update_info(info)
+
     def on_button_pressed(self, event: Button.Pressed):
         if not self.current_uuid:
             self.notify("Choose a extensions from left pane", severity = "warning")
@@ -156,15 +173,17 @@ class gnex_cli(App):
             results = search_extensions_online(search_text)
             online_list = self.query_one("#online-ext-list", OptionList)
             online_list.clear_options()
+            self.online_results_data.clear()
             if not results:
                 self.notify("Can't find any extensions QwQ", severity = "warning")
                 return
             for ext in results:
                 display_text = f"{ext.get('name')} (Author: {ext.get('creator')})"
                 uuid = ext.get('uuid')
+                self.online_results_data[uuid] = ext
                 online_list.add_option(Option(display_text, id = uuid))
             self.notify(f"Found {len(results)} Extensions!!", title = "search complete")
 
 if __name__ == "__main__":
     app = gnex_cli()
-    app.run()   
+    app.run()
