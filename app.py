@@ -30,7 +30,6 @@ def get_extensions_info(uuid):
 def search_extensions_online(query):
     safe_query = urllib.parse.quote(query)
     url = f"https://extensions.gnome.org/extension-query/?search={safe_query}"
-
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req) as response:
@@ -158,6 +157,23 @@ class gnex_cli(App):
             elif button_id == "btn-disable":
                 subprocess.run(['gnome-extensions','disable', self.current_uuid], check = True)
                 self.notify(f"successful disabled {self.current_uuid}", title = "Disabled", severity = "error")
+            elif button_id == "btn-install":
+                self.notify("Start Downloading ...", severity = "information")
+
+                ext_data = self.online_results_data.get(self.current_uuid, {})
+                downlaod_url = ext_data.get("download_url")
+
+                if not downlaod_url:
+                    self.notify("Download link not found!", severity = "error")
+                    return
+                full_url = f"https://extensions.gnome.org{downlaod_url}"
+                zip_path = f"/tmp/{self.current_uuid}.zip"
+                urllib.request.urlretrieve(full_url, zip_path)
+                subprocess.run(['gnome-extensions', 'install', zip_path, '--force'], check = True)
+                
+                subprocess.run(['gnome-extensions', 'enable', self.current_uuid], check = True)
+                self.notify("Install compelete! extension is already enabled", title = "nstall Success!")
+
         except Exception as e:
             self.notify(f"Operation failed:{e}", severity = "warning", title = "error")
         
