@@ -27,15 +27,11 @@ cd gnex_cli #path to your folder in local
 source .venv/bin/activate #if you didn't activate virtual enviroment
 python app.py #run app
 ```
-
-
-
 ### Controls
 
 - **Mouse**: Click on an extension in the list to view its details, and click the "Enable" or "Disable" buttons to change its status.
 - **Keyboard**: Use the `Up` and `Down` arrow keys to navigate the extension list. Press `Tab` to switch focus between the list and the action buttons, and `Enter` to trigger a button.
 - **Quit**: Press the `q` key at any time to exit the application.
-
 
 ### AI Using
 I use AI to help me fix the code, debug the errors, and help me to translate chinese to english,AI also help me write the docs too :D
