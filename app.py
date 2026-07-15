@@ -38,6 +38,15 @@ def search_extensions_online(query):
     except Exception as e:
         return []
 
+
+def get_shell_version():
+    try:
+        output = subprocess.check_output(['gnome-shell', '--version'], check = True)
+        return output.strip().split(' ')[2].split('.')[0]
+    except Exception:
+        return "50"
+
+
 #-------UI Elements---------
 
 class ExtensionDetails(Static):
@@ -158,21 +167,33 @@ class gnex_cli(App):
                 subprocess.run(['gnome-extensions','disable', self.current_uuid], check = True)
                 self.notify(f"successful disabled {self.current_uuid}", title = "Disabled", severity = "error")
             elif button_id == "btn-install":
-                self.notify("Start Downloading ...", severity = "information")
+                self.notify("Searching Package Online...", severity = "information")
 
-                ext_data = self.online_results_data.get(self.current_uuid, {})
-                downlaod_url = ext_data.get("download_url")
+                shell_version = get_shell_version()
+                info_url = f"https://extensions.gnome.org/extension-info/?uuid={self.current_uuid}&shell_version={shell_version}"
 
-                if not downlaod_url:
-                    self.notify("Download link not found!", severity = "error")
-                    return
-                full_url = f"https://extensions.gnome.org{downlaod_url}"
-                zip_path = f"/tmp/{self.current_uuid}.zip"
-                urllib.request.urlretrieve(full_url, zip_path)
-                subprocess.run(['gnome-extensions', 'install', zip_path, '--force'], check = True)
+                req = urllib.request.Request(info_url)
+                with urllib.request.urlopen(req) as response:
+                    detail_data = json.loads(response.read().decode('utf-8'))
                 
-                subprocess.run(['gnome-extensions', 'enable', self.current_uuid], check = True)
-                self.notify("Install compelete! extension is already enabled", title = "nstall Success!")
+                download_url = detail_data.get("download_url")
+                if not download_url:
+                    self.notify("This extension is not avaliable for current GNOME version", severity = "error")
+                    return
+                
+                self.notify("Downloading...Please wait...")
+                full_url = f"https://extensions.gnome.org{download_url}"
+                zip_path = f"/tmp/{self.current_uuid}.zip"
+
+                subprocess.run(['gnome-extensions', 'install', zip_path, '--force'], check=True, capture_output=True)
+
+                try:
+                    subprocess.run(['gnome-extensions', 'enable', self.current_uuid], check = True, capture_output = True)
+                    self.notify("Install and enabled", title = "Finished")
+                except subprocess.CalledProcessError:
+                    self.notify("Successfully installed ! but the task failed when enabled the extension\n please reboot or re-login and try enable from local list", title="Reboot or re-login needed", severity="warning", timeout=5)
+
+
 
         except Exception as e:
             self.notify(f"Operation failed:{e}", severity = "warning", title = "error")
