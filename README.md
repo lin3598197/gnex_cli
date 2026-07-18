@@ -13,6 +13,13 @@ Gnex_cli is a Terminal User Interface (TUI) application designed to manage your 
 - Python 3.x
 - GNOME Desktop Environment (`gnome-extensions` CLI tool must be installed and accessible).
 
+## How to run the release version
+1. Download the appimage
+2. cd to the path folder of file
+3. run `chmod +x` to make it excutable
+4. `./gnex_cli-x86_64.AppImage` to run it
+
+
 ## Installation
 ```bash
 git clone https://github.com/lin3598197/gnex_cli.git && cd gnex_cli
@@ -32,6 +39,8 @@ python app.py #run app
 - **Mouse**: Click on an extension in the list to view its details, and click the "Enable" or "Disable" buttons to change its status.
 - **Keyboard**: Use the `Up` and `Down` arrow keys to navigate the extension list. Press `Tab` to switch focus between the list and the action buttons, and `Enter` to trigger a button.
 - **Quit**: Press the `q` key at any time to exit the application.
+
+### If there any question, please open the issue ticket, I will fix it as soon as I posible
 
 ### AI Using
 I use AI to help me fix the code, debug the errors, and help me to translate chinese to english,AI also help me write the docs too :D
