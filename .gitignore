@@ -1,1 +1,9 @@
 .venv
+__pycache__/
+*.pyc
+build/
+dist/
+app.spec
+
+gnex_cli.AppDir/
+*.AppImage
